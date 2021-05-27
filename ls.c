@@ -26,11 +26,10 @@
 #include <time.h>
 #include "csapp.h"
 
-#define MAXPATH 1024
-#define MAXFILENAME 256
-#define MAXOPTION 14
-#define MAXLIST 1024
-#define MAXUSERNAME 128
+#define MAXPATH 8192    // maximum length of path operands
+#define MAXFILENAME 256 // maximum length of filename
+#define MAXLIST 1024    //maximum number of entries which will be displayed
+#define MAXUSERNAME 128 // maximum length of user name
 
 /* options */
 enum
@@ -70,6 +69,7 @@ struct list_entry
   int gid;                    //소유그룹
   int size;                   //크기 (byte)
   time_t time;                //변경일자 (month date time)
+  int year;                   //변경일자 (year);
 };
 
 /* max length of entry of list_entry */
@@ -85,7 +85,7 @@ struct max_length
 int total;
 
 /* prototypes of functions for ls */
-void parceCmdOption(struct cmd *cmd, char *argv[]);
+int parceCmdOption(struct cmd *cmd, char *argv[]);
 void initCmd(struct cmd *cmd);
 void initMl(struct max_length *ml);
 struct list_entry getEntryInfo(struct dirent *dirent, struct max_length *ml);
@@ -95,7 +95,7 @@ void printList(int fd, struct list_entry list[], const int size, const int optio
 void getPermissionStr(char *temp, int i, int permission);
 void getBlank(char temp[], int len);
 
-void copy(struct list_entry *dest, struct list_entry *entry);
+struct list_entry copy(struct list_entry *entry);
 void swap(struct list_entry *a, struct list_entry *b);
 int partition(int start, int end, struct list_entry list[], int (*comp)(struct list_entry *, struct list_entry *));
 void sortList(int start, int end, struct list_entry list[], int (*comp)(struct list_entry *, struct list_entry *));
@@ -114,19 +114,19 @@ int main(int argc, char *argv[])
   initCmd(&cmd);
 
   /* get parced command: options */
-  parceCmdOption(&cmd, argv);
+  int i = parceCmdOption(&cmd, argv);
 
   int fd = 1;
   /* pipe */
   //fd = ...
 
-  int i = 1;
-  if (argv[i] && argv[i][0] == '-')
-    i++;
-
+  /* first argument(path) */
   if (argv[i] != NULL)
     strcpy(cmd.path, argv[i]);
 
+  /* infoFlag: 
+   * 0 means one directory
+   * 1 means equal to or more than two directories */
   int infoFlag = 0;
   if (argv[i + 1] != NULL)
     infoFlag++;
@@ -142,15 +142,13 @@ int main(int argc, char *argv[])
       unix_error("Directory error");
 
     /* storage of info of current directory's all files and directories */
-    struct list_entry list[MAXLIST];
-    int idx = 0;
+    struct list_entry list[MAXLIST]; // list of informations of files or directories
+    int idx = 0;                     // index of entry of list
 
     /* get info of current directory's all files and directories */
     total = 0;
     while ((dirent = readdir(dh)) != NULL)
-    {
       list[idx++] = getEntryInfo(dirent, &ml);
-    }
 
     /* write info of list depending on the struct cmd */
     if (argv[i] && infoFlag)
@@ -164,6 +162,7 @@ int main(int argc, char *argv[])
     if (argv[i] == NULL)
       break;
 
+    /* i: index of array indicating path */
     i++;
     if (argv[i])
     {
@@ -181,12 +180,16 @@ int main(int argc, char *argv[])
 /* $begin printList */
 void printList(int fd, struct list_entry list[], const int size, const int option, const struct max_length ml)
 {
+  printf("===\n");
   /* sort */
   if (option & (1 << S))
     sortList(0, size - 1, list, compS);
   else if (option & (1 << t))
     sortList(0, size - 1, list, compT);
 
+  printf("-----\n");
+
+  /* print informations as a list */
   if (option & (1 << l))
   {
     char temp[40];
@@ -305,9 +308,16 @@ void printEntry(int fd, struct list_entry *entry, const int option, const struct
     write(fd, temp2, strlen(temp2)); //blanks
     write(fd, temp, strlen(temp));
 
+    /* current time */
+    time_t curTime = time(NULL);
+    struct tm *pLocal = localtime(&curTime);
+
     /* time */
     time_t tempTime = entry->time;
-    sprintf(temp, "%2ld %2ld %02ld:%02ld ", tempTime / 1000000, (tempTime / 10000) % 100, (tempTime / 100) % 100, tempTime % 100);
+    if (entry->year == pLocal->tm_year) /* month day hour:minute */
+      sprintf(temp, "%2ld %2ld %02ld:%02ld ", tempTime / 1000000, (tempTime / 10000) % 100, (tempTime / 100) % 100, tempTime % 100);
+    else /* month day year */
+      sprintf(temp, "%2ld %2ld %5d ", tempTime / 1000000, (tempTime / 10000) % 100, entry->year);
     write(fd, temp, strlen(temp));
 
     strcpy(temp2, "\n");
@@ -320,13 +330,16 @@ void printEntry(int fd, struct list_entry *entry, const int option, const struct
 }
 /* $end printEntry */
 
+/* $$begin getBlank */
 void getBlank(char temp[], int len)
 {
   for (int i = 0; i < len; i++)
     temp[i] = ' ';
   temp[len] = '\0';
 }
+/* $$end getBlank */
 
+/* $$begin getPermissionStr */
 void getPermissionStr(char *temp, int i, int permission)
 {
   if (permission & 4)
@@ -346,6 +359,7 @@ void getPermissionStr(char *temp, int i, int permission)
 
   temp[i + 3] = '\0';
 }
+/* $$end getPermissionStr */
 
 /* get informations of current directory's all files and directories */
 /* $begin getEntryInfo */
@@ -390,11 +404,11 @@ struct list_entry getEntryInfo(struct dirent *dirent, struct max_length *ml)
   /* get user_id and group_id */
   entry.uid = fs.st_uid;
   entry.gid = fs.st_gid;
-
+  //user
   len = strlen(getpwuid(entry.uid)->pw_name);
   if (ml->user < len)
     ml->user = len;
-
+  //group
   len = strlen(getgrgid(entry.gid)->gr_name);
   if (ml->group < len)
     ml->group = len;
@@ -407,25 +421,33 @@ struct list_entry getEntryInfo(struct dirent *dirent, struct max_length *ml)
   if (ml->size < len)
     ml->size = len;
 
-  /* get update time */
+  /* get update modified time */
   struct tm *t = localtime(&fs.st_mtime);
+  // MMDDHHmm
   entry.time = (t->tm_mon + 1) * 1000000 + t->tm_mday * 10000 + t->tm_hour * 100 + t->tm_min;
+  // YYYY
+  entry.year = t->tm_year;
 
   return entry;
 }
 /* $end getEntryInfo */
 
 /* $begin parceCmdOption */
-void parceCmdOption(struct cmd *cmd, char *argv[])
+// return index of first path argument
+int parceCmdOption(struct cmd *cmd, char *argv[])
 {
-  char *path = NULL;
-  if (argv[1] && argv[1][0] == '-')
+  if (argv[1] == NULL)
+    return 1;
+  /* extract options */
+  int i = 1;
+  for (i = 1; argv[i] && argv[i][0] == '-'; i++)
   {
-    int i = 1, len = strlen(argv[1]);
-    while (i < len)
+    int j = 1;
+    int len = strlen(argv[i]);
+    while (j < len)
     {
       int opt;
-      switch (argv[1][i++])
+      switch (argv[i][j++])
       {
       case 'a':
         opt = (1 << a);
@@ -458,11 +480,12 @@ void parceCmdOption(struct cmd *cmd, char *argv[])
         break;
       }
       } //switch end
-
       /* recording the option */
-      cmd->option += opt;
+      cmd->option |= opt;
     } //while end
   }
+
+  return i;
 }
 /* $end parceCmdOption */
 
@@ -490,25 +513,16 @@ void initMl(struct max_length *ml)
 
 /* sort list */
 /* $begin sortList */
-void copy(struct list_entry *dest, struct list_entry *entry)
+struct list_entry copy(struct list_entry *entry)
 {
-  strcpy(dest->filename, entry->filename);
-  dest->gid = entry->gid;
-  dest->uid = entry->uid;
-  dest->inode = entry->inode;
-  dest->linkCnt = entry->linkCnt;
-  dest->permission = entry->permission;
-  dest->type = entry->type;
-  dest->size = entry->size;
-  dest->time = entry->time;
+  return *entry;
 }
 
 void swap(struct list_entry *a, struct list_entry *b)
 {
-  struct list_entry temp;
-  copy(&temp, a);
-  copy(a, b);
-  copy(b, &temp);
+  struct list_entry temp = copy(a);
+  *a = copy(b);
+  *b = copy(&temp);
 }
 
 int partition(int start, int end, struct list_entry list[], int (*comp)(struct list_entry *, struct list_entry *))
@@ -523,7 +537,6 @@ int partition(int start, int end, struct list_entry list[], int (*comp)(struct l
 
   while (compIdx < end)
   {
-    //if (pivotElem.size < list[compIdx].size)
     if (comp(&pivotElem, list + compIdx) < 0)
     {
       swap(list + compIdx, list + storageIdx);
@@ -548,7 +561,6 @@ void sortList(int start, int end, struct list_entry list[], int (*comp)(struct l
   sortList(start, pivot - 1, list, comp);
   sortList(pivot + 1, end, list, comp);
 }
-/* $end sortList */
 
 /* compare functions for sort */
 /* sorting by file size */
@@ -561,3 +573,4 @@ int compT(struct list_entry *a, struct list_entry *b)
 {
   return (int)(a->time) - (int)(b->time);
 }
+/* $$end sortList */
