@@ -230,54 +230,6 @@ int getOption(int *option, int *mode, char *argv[])
   }
 
   return i;
-  // /* no path */
-  // if (argv[1] == NULL)
-  // {
-  //   printf("mkdir: missing operand\n");
-  //   exit(0);
-  // }
-
-  // if (argv[1][0] == '-')
-  // {
-  //   /* no path */
-  //   if (argv[2] == NULL)
-  //   {
-  //     printf("mkdir: missing path operand\n");
-  //     exit(0);
-  //   }
-
-  //   int len = strlen(argv[1]);
-  //   for (int i = 1; i < len; i++)
-  //   {
-  //     int opt = charOptToIntOpt(argv[1][i]);
-
-  //     /* invalid option */
-  //     if (opt < 0)
-  //     {
-  //       printf("mkdir: invalid options\n");
-  //       exit(0);
-  //     }
-
-  //     if (opt == _m_)
-  //     {
-  //       *mode = getMode(argv[1]);
-  //       if (*mode < 0)
-  //       {
-  //         printf("mkdir: invalid mode form: valid ex)  -m=XXX, 0 <= X <= 7\n");
-  //         exit(0);
-  //       }
-
-  //       *option += (1 << opt);
-  //       return 2;
-  //     }
-
-  //     *option += (1 << opt);
-  //   }
-
-  //   return 2;
-  // }
-
-  // return 1;
 }
 /* $end getOption */
 

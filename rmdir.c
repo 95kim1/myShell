@@ -30,6 +30,7 @@ enum
 /* get the option as a bits 
   and the index which indicates the beginning of path arguments */
 int parceInput(int *x_option, char *x_argv[]);
+int getIntOpt(char c);
 /* remove ./a/b/c -> remove */
 void removeDirs(char *x_path, int option);
 int separatePaths(char *x_path, char x_paths[][MAXDIRNAME]);
@@ -51,6 +52,12 @@ int main(int argc, char *argv[])
   /* get the option and index of path operand */
   int i_path = parceInput(&option, argv);
 
+  if (argv[i_path] == NULL)
+  {
+    printf("rmdir: no target\n");
+    exit(0);
+  }
+
   while (argv[i_path] != NULL)
     /* remove directory of path */
     removeDirs(argv[i_path++], option);
@@ -64,31 +71,48 @@ int main(int argc, char *argv[])
   and the index which indicates the beginning of path arguments */
 int parceInput(int *x_option, char *x_argv[])
 {
-  *x_option = 0;
-  if (x_argv[1][0] == '-')
+  if (x_argv[1] == NULL)
+    return 1;
+  /* extract options */
+  int i = 1;
+  for (i = 1; x_argv[i] && x_argv[i][0] == '-'; i++)
   {
-    for (int i = 1; x_argv[1][i] != '\0'; i++)
+    int j = 1;
+    int len = strlen(x_argv[i]);
+    while (j < len)
     {
-      if (x_argv[1][i] == 'p')
-        *x_option |= (1 << _p_);
-      else if (x_argv[1][i] == 'm')
-        *x_option |= (1 << _v_);
-      else /* wrong option error */
+      /* extract an option */
+      int opt = getIntOpt(x_argv[i][j++]);
+
+      /* wrong option */
+      if (opt < 0)
       {
-        printf("rmdir: wrong options, %c\n", x_argv[1][i]);
+        unix_error("rmdir error");
         exit(0);
       }
+
+      /* recording the option */
+      *x_option |= (1 << opt);
     }
-    if (x_argv[2] == NULL) /* no path as an operand */
-    {
-      printf("rmdir: no path operand\n");
-      exit(0);
-    }
-    return 2;
   }
-  return 1;
+
+  return i;
 }
 /* $end parceInput */
+
+/* $begin getIntOpt */
+int getIntOpt(char c)
+{
+  switch (c)
+  {
+  case 'p':
+    return _p_;
+  case 'v':
+    return _v_;
+  }
+  return -1;
+}
+/* $end getIntOpt */
 
 /* $begin removeDirs */
 void removeDirs(char *x_path, int option)
