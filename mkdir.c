@@ -45,13 +45,13 @@ int getPath(char path[][MAXPATHLEN], char *argv[], int pathIdx);
 int getOption(int *option, int *mode, char *argv[]);
 /* get mode as integer, ex) -m=755 -> return 0755 */
 int getMode(char *options);
-/* get option as bits */
-int charOptToIntOpt(char opt);
+/* get option as an integer */
+int getIntOpt(char opt);
 
 int main(int argc, char *argv[])
 {
   char path[MAXDIR][MAXPATHLEN];
-  int option, mode = 0755;
+  int option = 0, mode = 0755;
 
   /* get option and starting index of directory paths */
   int pathIdx = getOption(&option, &mode, argv);
@@ -85,13 +85,19 @@ void makeDirectory(char *path, int option, int mode)
   /* get path without last directory */
   strcpy(temp_path, path);
   int len = strlen(path);
-  for (int i = len - 2; i >= 0; i--)
+  int i;
+  for (i = len - 2; i >= 0; i--)
   {
     if (temp_path[i] == '/')
     {
       temp_path[i] = '\0';
       break;
     }
+  }
+  if (i < 0)
+  {
+    temp_path[0] = '.';
+    temp_path[1] = '\0';
   }
 
   /* check that path(without last directory) exists */
@@ -183,54 +189,95 @@ int getPath(char path[][MAXPATHLEN], char *argv[], int pathIdx)
 /* no path -> error and return -1 */
 int getOption(int *option, int *mode, char *argv[])
 {
-  /* no path */
   if (argv[1] == NULL)
+    return 1;
+  /* extract options */
+  int i = 1;
+  for (i = 1; argv[i] && argv[i][0] == '-'; i++)
   {
-    printf("mkdir: missing operand\n");
-    exit(0);
-  }
-
-  if (argv[1][0] == '-')
-  {
-    /* no path */
-    if (argv[2] == NULL)
+    int j = 1;
+    int len = strlen(argv[i]);
+    while (j < len)
     {
-      printf("mkdir: missing path operand\n");
-      exit(0);
-    }
+      /* extract an option */
+      int opt = getIntOpt(argv[i][j++]);
 
-    int len = strlen(argv[1]);
-    for (int i = 1; i < len; i++)
-    {
-      int opt = charOptToIntOpt(argv[1][i]);
-
-      /* invalid option */
+      /* wrong option */
       if (opt < 0)
       {
-        printf("mkdir: invalid options\n");
+        printf("mkdir: invalid file mode: %c\n", argv[i][j - 1]);
         exit(0);
       }
 
+      /* mode setting option */
       if (opt == _m_)
       {
-        *mode = getMode(argv[1]);
+        *mode = getMode(argv[i]);
         if (*mode < 0)
         {
-          printf("mkdir: invalid mode form: valid ex)  -m=XXX, 0 <= X <= 7\n");
+          printf("mkdir: invalid file mode\n");
           exit(0);
         }
 
-        *option += (1 << opt);
-        return 2;
+        *option |= (1 << opt);
+
+        break;
       }
 
-      *option += (1 << opt);
+      /* recording the option */
+      *option |= (1 << opt);
     }
-
-    return 2;
   }
 
-  return 1;
+  return i;
+  // /* no path */
+  // if (argv[1] == NULL)
+  // {
+  //   printf("mkdir: missing operand\n");
+  //   exit(0);
+  // }
+
+  // if (argv[1][0] == '-')
+  // {
+  //   /* no path */
+  //   if (argv[2] == NULL)
+  //   {
+  //     printf("mkdir: missing path operand\n");
+  //     exit(0);
+  //   }
+
+  //   int len = strlen(argv[1]);
+  //   for (int i = 1; i < len; i++)
+  //   {
+  //     int opt = charOptToIntOpt(argv[1][i]);
+
+  //     /* invalid option */
+  //     if (opt < 0)
+  //     {
+  //       printf("mkdir: invalid options\n");
+  //       exit(0);
+  //     }
+
+  //     if (opt == _m_)
+  //     {
+  //       *mode = getMode(argv[1]);
+  //       if (*mode < 0)
+  //       {
+  //         printf("mkdir: invalid mode form: valid ex)  -m=XXX, 0 <= X <= 7\n");
+  //         exit(0);
+  //       }
+
+  //       *option += (1 << opt);
+  //       return 2;
+  //     }
+
+  //     *option += (1 << opt);
+  //   }
+
+  //   return 2;
+  // }
+
+  // return 1;
 }
 /* $end getOption */
 
@@ -269,10 +316,10 @@ int getMode(char *options)
 }
 /* $$end getMode */
 
-/* $$begin charOptToIntOpt */
+/* $$begin getIntOpt */
 /* get option as bits */
 /* ex) -pv -> return  101_(2)*/
-int charOptToIntOpt(char opt)
+int getIntOpt(char opt)
 {
   switch (opt)
   {
@@ -285,4 +332,4 @@ int charOptToIntOpt(char opt)
   }
   return -1;
 }
-/* $$end charOptToIntOpt */
+/* $$end getIntOpt */

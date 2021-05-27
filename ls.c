@@ -180,14 +180,11 @@ int main(int argc, char *argv[])
 /* $begin printList */
 void printList(int fd, struct list_entry list[], const int size, const int option, const struct max_length ml)
 {
-  printf("===\n");
   /* sort */
   if (option & (1 << S))
     sortList(0, size - 1, list, compS);
   else if (option & (1 << t))
     sortList(0, size - 1, list, compT);
-
-  printf("-----\n");
 
   /* print informations as a list */
   if (option & (1 << l))
