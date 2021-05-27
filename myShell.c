@@ -103,10 +103,7 @@ void cd(char *argv[])
     char path[MAXPATH];
     strcpy(path, argv[1]);
 
-    if (!strcmp(path, "-")) //나중에 구현
-    {
-    }
-    else if (!strcmp(path, "~")) /* HOME directory */
+    if (!strcmp(path, "~")) /* HOME directory */
     {
         char *home;
         if ((home = getenv("HOME")) == NULL)

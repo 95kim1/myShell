@@ -6,7 +6,7 @@ PROGS = myShell ls mkdir rmdir
 
 all: $(PROGS)
 
-myShell: mysShell.c csapp.c
+myShell: myShell.c csapp.c
 
 ls: ls.c csapp.c
 

@@ -7,6 +7,15 @@
  * 
  * this source code is for 'ls' of linux shell.
  * but it has no 100% functions.
+ * 
+ * -a: display every directory and file
+ * -l: display as lists
+ * -F: add / to directory
+ * -ii: display inode
+ * -s: display size
+ * -h: display size as unit K  (ex 4096 -> 4K)
+ * -S: display elements sorted by size
+ * -t: display elements sorted by time
  */
 #include <stdio.h>
 #include <string.h>
@@ -118,6 +127,10 @@ int main(int argc, char *argv[])
   if (argv[i] != NULL)
     strcpy(cmd.path, argv[i]);
 
+  int infoFlag = 0;
+  if (argv[i + 1] != NULL)
+    infoFlag++;
+
   while (cmd.path[0] != '\0')
   {
     initMl(&ml);
@@ -140,7 +153,7 @@ int main(int argc, char *argv[])
     }
 
     /* write info of list depending on the struct cmd */
-    if (argv[i])
+    if (argv[i] && infoFlag)
     {
       write(fd, argv[i], strlen(argv[i]));
       write(fd, ":\n", 2);

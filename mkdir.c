@@ -7,6 +7,11 @@
  * 
  * this source code is for 'mkdir' of linux shell.
  * but it has no 100% functions.
+ * 
+ * -m: Set the permission of directory which will be created.
+ * -p: Each directory argument is treated as a pathname
+ *    of which all components will be created.
+ * -v: Display verbose information for every directory processd. 
  */
 #include "csapp.h"
 #include <dirent.h>
@@ -18,6 +23,7 @@
 #define MAXDIR 32       //the number of dirs as cmd arguments
 #define MAXDEPTH 32     //path depth
 
+/* options */
 enum
 {
   _m_,
@@ -25,12 +31,21 @@ enum
   _v_,
 };
 
+/* create directory */
 void makeDirectory(char *path, int option, int mode);
+
+/* check path exist */
 int existDir(char *path);
+/* separate path with / */
 int parcePaths(char *path, char parcedPath[][MAXDIRNAME]);
+
+/* extract path from argv and return the number of paths */
 int getPath(char path[][MAXPATHLEN], char *argv[], int pathIdx);
+/* extract option from argv and return the begining path index of argv */
 int getOption(int *option, int *mode, char *argv[]);
+/* get mode as integer, ex) -m=755 -> return 0755 */
 int getMode(char *options);
+/* get option as bits */
 int charOptToIntOpt(char opt);
 
 int main(int argc, char *argv[])
@@ -53,69 +68,82 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/* */
 /* $begin makeDirectory */
+/* create directory with option */
 void makeDirectory(char *path, int option, int mode)
 {
   char parcedPath[MAXDEPTH][MAXDIRNAME];
+  char temp_path[MAXPATHLEN];
+  char cwd[MAXPATHLEN];
   for (int i = 0; i < MAXDEPTH; i++)
     parcedPath[i][0] = '\0';
 
+  /* separate path with '/' */
   int cnt = parcePaths(path, parcedPath);
   int exist;
 
-  // find error
-  for (int i = 0; i < cnt; i++)
+  /* get path without last directory */
+  strcpy(temp_path, path);
+  int len = strlen(path);
+  for (int i = len - 2; i >= 0; i--)
   {
-    if ((exist = existDir(parcedPath[i])) < 0)
+    if (temp_path[i] == '/')
     {
-      unix_error("mkdir: find directory error");
-    }
-    if (i != 0 && exist == 0 && !(option & (1 << _p_)))
-    {
-      printf("mkdir: cannot create directory \'%s\'\n", path);
-      exit(0);
+      temp_path[i] = '\0';
+      break;
     }
   }
 
-  char cwd[MAXPATHLEN];
-  getcwd(cwd, sizeof cwd);
+  /* check that path(without last directory) exists */
+  exist = existDir(temp_path);
 
+  // error except for "No such file or directory"
+  if (exist < 0)
+    unix_error("mkdir error");
+
+  // path(without lastdirectory) doesn't exist with no p option
+  if (exist == 0 && !(option & (1 << _p_)))
+  {
+    printf("mkdir: failed to create directory \'%s\'\n", path);
+    exit(0);
+  }
+
+  /* make directories */
   char curr[MAXPATHLEN];
   curr[0] = '\0';
-  // make directories
   for (int i = 0; i < cnt; i++)
   {
+    //record current path
+    strcat(curr, parcedPath[i]);
+
+    //create
+    mkdir(curr, mode);
+
+    // with -v option
     if (option & (1 << _v_))
-      strcat(curr, parcedPath);
-
-    if (existDir(parcedPath[i]) == 0)
-    {
-      mkdir(parcedPath[i], mode);
-      if (option & (1 << _v_))
-        printf("mkdir: created directory \'%s\'\n", curr);
-    }
-
-    chdir(parcedPath[i]);
+      printf("mkdir: creating directory, \'%s\'\n", curr);
   }
-  chdir(cwd);
 }
+/* $end makeDirectory */
 
 /* get existence of a directory */
+/* $$begin existDir */
 int existDir(char *path)
 {
   DIR *dir = opendir(path);
   if (dir)
   {
     closedir(dir);
-    return 1;
+    return 1; //exists
   }
   else if (ENOENT == errno)
-    return 0;
+    return 0; //doesn't exist
   else
-    return -1;
+    return -1; //any other errors
 }
+/* $$end existDir */
 
+/* $$begin parcePaths */
 /* ./a/b/c/ -> ./, a/, b/, c/ */
 int parcePaths(char *path, char parcedPath[][MAXDIRNAME])
 {
@@ -135,10 +163,10 @@ int parcePaths(char *path, char parcedPath[][MAXDIRNAME])
     cnt++;
   return cnt;
 }
-/* $end makeDirectory */
+/* $$end parcePaths */
 
-/* extract path from argv and return the number of paths */
 /* $begin getPath */
+/* extract path from argv and return the number of paths */
 int getPath(char path[][MAXPATHLEN], char *argv[], int pathIdx)
 {
   int cnt = 0;
@@ -150,9 +178,9 @@ int getPath(char path[][MAXPATHLEN], char *argv[], int pathIdx)
 }
 /* $end getPath */
 
+/* $begin getOption */
 /* extract option from argv and return the begining path index of argv */
 /* no path -> error and return -1 */
-/* $begin getOption */
 int getOption(int *option, int *mode, char *argv[])
 {
   /* no path */
@@ -192,7 +220,7 @@ int getOption(int *option, int *mode, char *argv[])
           exit(0);
         }
 
-        *option + (1 << opt);
+        *option += (1 << opt);
         return 2;
       }
 
@@ -204,7 +232,9 @@ int getOption(int *option, int *mode, char *argv[])
 
   return 1;
 }
+/* $end getOption */
 
+/* $$begin getMode */
 /* get mode */
 /* ex) -m=755 -> return 0755 */
 int getMode(char *options)
@@ -237,7 +267,9 @@ int getMode(char *options)
 
   return mode;
 }
+/* $$end getMode */
 
+/* $$begin charOptToIntOpt */
 /* get option as bits */
 /* ex) -pv -> return  101_(2)*/
 int charOptToIntOpt(char opt)
@@ -253,4 +285,4 @@ int charOptToIntOpt(char opt)
   }
   return -1;
 }
-/* $end getOption */
+/* $$end charOptToIntOpt */
