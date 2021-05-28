@@ -16,6 +16,7 @@
  */
 #include "csapp.h"
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
@@ -26,7 +27,6 @@ enum
 {
   _a_, // to change file access and modification time.
   _m_, // it is used only modify time of a file.
-  _r_, // to update time of one file with reference to the other file.
   _t_, // to create a file by specifying the time.
   _c_, // it doesn't create n empty file.
 };
@@ -50,11 +50,12 @@ int parceTOption(struct cmd *x_cmd, char *x_argv[], int *x_idx, int *x_i);
 
 int isValidTimeFormat(char *xarr_time);
 int getYear(char *xarr_time, int x_year, int cnt);
-int isValidMMDDhhmm(char *xarr_time, int x_year);
+int isValidMMDDhhmm(char *xarr_time, int x_year, int x_i);
 int isValidMonth(char *xarr_time, int x_i, int *x_month);
 int isValidDay(char *xarr_time, int x_i, int x_year, int x_month);
 int isValidHour(char *xarr_time, int x_i);
 int isValidMinute(char *xarr_time, int x_i);
+int isValidSec(char *xarr_time, int x_i);
 
 void getPaths(struct cmd *x_cmd, char *x_argv[]);
 
@@ -131,6 +132,13 @@ void myTouch(const char *x_path, const struct cmd *x_cmd)
 
   /* file info */
   struct utimbuf timebuf;
+  struct stat stbuf;
+
+  if (stat(x_path, &stbuf) < 0)
+    unix_error("touch error");
+
+  timebuf.actime = stbuf.st_atime;
+  timebuf.modtime = stbuf.st_mtime;
 
   if (option & (1 << _a_))
   {
@@ -146,7 +154,6 @@ void myTouch(const char *x_path, const struct cmd *x_cmd)
   }
   if (option & (1 << _t_))
   {
-    printf("%s\n", arr_t);
     timebuf.actime = timebuf.modtime = getTime(arr_t);
     if (utime(x_path, &timebuf) < 0)
       unix_error("touch error");
@@ -160,8 +167,14 @@ time_t getTime(const char *xarr_t)
 {
   time_t t = time(NULL);
   struct tm *tm = localtime(&t);
+  tm->tm_year += 1900;
+  int year = tm->tm_year;
+  tm->tm_mon += 1;
 
   getTimeFromStr(xarr_t, &tm->tm_year, &tm->tm_mon, &tm->tm_mday, &tm->tm_hour, &tm->tm_min, &tm->tm_sec);
+
+  if (tm->tm_year < 100)
+    tm->tm_year += (year / 100) * 100;
 
   tm->tm_year -= 1900;
   tm->tm_mon -= 1;
@@ -340,15 +353,14 @@ void extractOption(struct cmd *x_cmd, char *x_argv[], int *idx)
   while (x_str[i] != '\0')
   {
     if (x_str[i] == 'c')
-      option |= _c_;
+      option |= (1 << _c_);
     else if (x_str[i] == 'a')
-      option |= _a_;
+      option |= (1 << _a_);
     else if (x_str[i] == 'm')
-      option |= _m_;
+      option |= (1 << _m_);
     else if (x_str[i] == 't')
     {
-      option |= parceTOption(x_cmd, x_argv, idx, &i);
-      x_cmd->option |= option;
+      x_cmd->option |= (1 << parceTOption(x_cmd, x_argv, idx, &i));
       return;
     }
     i++;
@@ -399,46 +411,46 @@ int isValidTimeFormat(char *xarr_time)
 
   time_t temp = time(NULL);
   struct tm *t = localtime(&temp);
-  int year = t->tm_year;
+  int year = t->tm_year + 1900;
 
   switch (len)
   {
   case 8: //MMDDhhmm
-    if (isValidMMDDhhmm(xarr_time, year))
+    if (isValidMMDDhhmm(xarr_time, year, 0))
       return 1;
     return 0;
   case 10: //YYMMDDhhmm
     if (!(year = getYear(xarr_time, year, 2)))
       return 0;
-    if (isValidMMDDhhmm(xarr_time, year))
+    if (isValidMMDDhhmm(xarr_time, year, 2))
       return 1;
     return 0;
   case 11: //MMDDhhmm.ss
-    if (!isValidMMDDhhmm(xarr_time, year))
+    if (!isValidMMDDhhmm(xarr_time, year, 0))
       return 0;
-    if (isValidMonth(xarr_time, strlen(xarr_time) - 2, NULL)) //is the second valid?
+    if (isValidMonth(xarr_time, strlen(xarr_time) - 2, NULL))
       return 1;
     return 0;
   case 12: //YYYYMMDDhhmm
     if (!(year = getYear(xarr_time, year, 4)))
       return 0;
-    if (isValidMMDDhhmm(xarr_time, year))
+    if (isValidMMDDhhmm(xarr_time, year, 4))
       return 1;
     return 0;
   case 13: //YYMMDDhhmm.ss
     if (!(year = getYear(xarr_time, year, 2)))
       return 0;
-    if (!isValidMMDDhhmm(xarr_time, year))
+    if (!isValidMMDDhhmm(xarr_time, year, 2))
       return 0;
-    if (isValidMonth(xarr_time, strlen(xarr_time) - 2, NULL)) //is the second valid?
+    if (isValidSec(xarr_time, len - 2))
       return 1;
     return 0;
   case 15: //YYYYMMDDhhmm.ss
     if (!(year = getYear(xarr_time, year, 4)))
       return 0;
-    if (!isValidMMDDhhmm(xarr_time, year))
+    if (!isValidMMDDhhmm(xarr_time, year, 4))
       return 0;
-    if (isValidMonth(xarr_time, strlen(xarr_time) - 2, NULL)) //is the second valid?
+    if (isValidSec(xarr_time, len - 2)) //is the second valid?
       return 1;
     return 0;
   }
@@ -465,16 +477,21 @@ int getYear(char *xarr_time, int x_year, int x_cnt)
   return year;
 }
 
-int isValidMMDDhhmm(char *xarr_time, int x_year)
+int isValidMMDDhhmm(char *xarr_time, int x_year, int x_i)
 {
+  time_t t = time(NULL);
+  struct tm *tm = localtime(&t);
+  if (x_year < 100) /* YYMMDDhhmm -> year < 100 */
+    x_year += (tm->tm_year + 1900) / 100 * 100;
+
   int month;
-  if (!isValidMonth(xarr_time, 0, &month))
+  if (!isValidMonth(xarr_time, x_i, &month))
     return 0;
-  if (!isValidDay(xarr_time, 2, x_year, month))
+  if (!isValidDay(xarr_time, x_i + 2, x_year, month))
     return 0;
-  if (!isValidHour(xarr_time, 4))
+  if (!isValidHour(xarr_time, x_i + 4))
     return 0;
-  if (!isValidMinute(xarr_time, 6))
+  if (!isValidMinute(xarr_time, x_i + 6))
     return 0;
   return 1;
 }
@@ -582,6 +599,11 @@ int isValidMinute(char *xarr_time, int x_i)
   if (0 <= m && m <= 59)
     return 1;
   return 0;
+}
+
+int isValidSec(char *xarr_time, int x_i)
+{
+  return isValidMinute(xarr_time, x_i);
 }
 
 /* $$$$$end isValidTimeFormat */
