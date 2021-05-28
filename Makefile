@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Og
 LDLIBS = -lpthread
 
-PROGS = myShell ls mkdir rmdir touch cat
+PROGS = myShell ls mkdir rmdir touch cat echo
 
 all: $(PROGS)
 
@@ -17,6 +17,8 @@ rmdir: rmdir.c csapp.c
 touch: touch.c csapp.c
 
 cat: cat.c csapp.c
+
+echo: echo.c csapp.c
 
 clean:
 	rm -rf *~ $(PROGS)
