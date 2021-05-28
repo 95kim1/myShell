@@ -12,7 +12,7 @@ int builtin_command(char **argv);
 /* built-in functions */
 void cd(char *argv[]);
 void pwd();
-void echo(char *argv[]);
+//void echo(char *argv[]);
 
 int main()
 {
@@ -84,11 +84,11 @@ int builtin_command(char *argv[])
         cd(argv);
         return 1;
     }
-    if (!strcmp(argv[0], "echo")) /* echo command without pipe */
-    {
-        echo(argv);
-        return 1;
-    }
+    // if (!strcmp(argv[0], "echo")) /* echo command without pipe */
+    // {
+    //     echo(argv);
+    //     return 1;
+    // }
     if (!strcmp(argv[0], "&")) /* Ignore singleton & */
         return 1;
     return 0; /* Not a builtin command */
@@ -172,14 +172,14 @@ int parseline(char *buf, char **argv)
     return bg;
 }
 
-void echo(char *argv[])
-{
-    for (int i = 1; argv[i] != NULL; i++)
-    {
-        printf("%s", argv[i]);
-        if (argv[i + 1] != NULL)
-            printf(" ");
-    }
-    printf("\n");
-}
+// void echo(char *argv[])
+// {
+//     for (int i = 1; argv[i] != NULL; i++)
+//     {
+//         printf("%s", argv[i]);
+//         if (argv[i + 1] != NULL)
+//             printf(" ");
+//     }
+//     printf("\n");
+// }
 /* $end parseline */
