@@ -3,7 +3,7 @@
  * 
  * project of system programming course of sogang univ.
  * 
- * ls command
+ * No.1 ls command
  * 
  * this source code is for 'ls' of linux shell.
  * but it has no 100% functions.

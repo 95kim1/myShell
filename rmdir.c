@@ -3,7 +3,7 @@
  * 
  * project of system programming course of sogang univ.
  * 
- * rmdir command
+ * No.3 rmdir command
  * 
  * this source code is for 'rmdir' of linux shell.
  * but it has no 100% functions.
@@ -15,7 +15,7 @@
  */
 #include "csapp.h"
 #include <dirent.h>
-#define MAXDEPTH 32      /* path depth */
+#define MAXDEPTH 128     /* path depth */
 #define MAXDIRNAME 256   /* directory name length */
 #define MAXPATHLEN 8192  /* maximum path length */
 #define PARENT_DIR "../" /* parent directory */

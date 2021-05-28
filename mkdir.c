@@ -3,7 +3,7 @@
  * 
  * project of system programming course of sogang univ.
  * 
- * mkdir command
+ * No.2 mkdir command
  * 
  * this source code is for 'mkdir' of linux shell.
  * but it has no 100% functions.
@@ -21,7 +21,7 @@
 #define MAXPATHLEN 8192 // maximum path length
 #define MAXDIRNAME 256  // directory's maximum length of name
 #define MAXDIR 32       //the number of dirs as cmd arguments
-#define MAXDEPTH 32     //path depth
+#define MAXDEPTH 128    //path depth
 
 /* options */
 enum
@@ -132,8 +132,8 @@ void makeDirectory(char *path, int option, int mode)
 }
 /* $end makeDirectory */
 
-/* get existence of a directory */
 /* $$begin existDir */
+/* get existence of a directory */
 int existDir(char *path)
 {
   DIR *dir = opendir(path);
