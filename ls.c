@@ -311,7 +311,7 @@ void printEntry(int fd, struct list_entry *entry, const int option, const struct
 
     /* time */
     time_t tempTime = entry->time;
-    if (entry->year == pLocal->tm_year) /* month day hour:minute */
+    if (entry->year == pLocal->tm_year + 1900) /* month day hour:minute */
       sprintf(temp, "%2ld %2ld %02ld:%02ld ", tempTime / 1000000, (tempTime / 10000) % 100, (tempTime / 100) % 100, tempTime % 100);
     else /* month day year */
       sprintf(temp, "%2ld %2ld %5d ", tempTime / 1000000, (tempTime / 10000) % 100, entry->year);
@@ -423,7 +423,7 @@ struct list_entry getEntryInfo(struct dirent *dirent, struct max_length *ml)
   // MMDDHHmm
   entry.time = (t->tm_mon + 1) * 1000000 + t->tm_mday * 10000 + t->tm_hour * 100 + t->tm_min;
   // YYYY
-  entry.year = t->tm_year;
+  entry.year = t->tm_year + 1900;
 
   return entry;
 }
