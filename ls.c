@@ -8,6 +8,9 @@
  * this source code is for 'ls' of linux shell.
  * but it has no 100% functions.
  * 
+ * usage: ls [-options] [path,...]
+ * 
+ * option:
  * -a: display every directory and file
  * -l: display as lists
  * -F: add / to directory
@@ -116,9 +119,7 @@ int main(int argc, char *argv[])
   /* get parced command: options */
   int i = parceCmdOption(&cmd, argv);
 
-  int fd = 1;
-  /* pipe */
-  //fd = ...
+  int fd = 1; //stdout
 
   /* first argument(path) */
   if (argv[i] != NULL)
@@ -172,6 +173,7 @@ int main(int argc, char *argv[])
     else
       strcpy(cmd.path, "\0");
   }
+  write(1, "\0", 1);
   return 0;
 }
 /* $end main */

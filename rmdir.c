@@ -8,6 +8,8 @@
  * this source code is for 'rmdir' of linux shell.
  * but it has no 100% functions.
  * 
+ * usage: rmdir [-options] path [path,...]
+ * 
  * option:
  * -p: each directory argument is treated as a pathname 
  *    of which all compnents will be removed.
@@ -32,9 +34,9 @@ enum
 int parceInput(int *x_option, char *x_argv[]);
 int getIntOpt(char c);
 /* remove ./a/b/c -> remove */
-void removeDirs(char *x_path, int option);
+void removeDirs(char *x_path, int option, int fd);
 int separatePaths(char *x_path, char x_paths[][MAXDIRNAME]);
-void rmdir_p(int x_depth, int x_len, char x_paths[][MAXDIRNAME], int option);
+void rmdir_p(int x_depth, int x_len, char x_paths[][MAXDIRNAME], int option, int fd);
 int isEmptyDir(const char *x_path);
 
 /* begin main */
@@ -60,7 +62,7 @@ int main(int argc, char *argv[])
 
   while (argv[i_path] != NULL)
     /* remove directory of path */
-    removeDirs(argv[i_path++], option);
+    removeDirs(argv[i_path++], option, 1);
 
   return 0;
 }
@@ -115,7 +117,7 @@ int getIntOpt(char c)
 /* $end getIntOpt */
 
 /* $begin removeDirs */
-void removeDirs(char *x_path, int option)
+void removeDirs(char *x_path, int option, int fd)
 {
   /* rmdir -p ... */
   if (option & (1 << _p_))
@@ -123,7 +125,7 @@ void removeDirs(char *x_path, int option)
     /* separate each path */
     char paths[MAXDEPTH][MAXDIRNAME];
     int len = separatePaths(x_path, paths);
-    rmdir_p(0, len, paths, option);
+    rmdir_p(0, len, paths, option, fd);
   }
   else /* rmdir [no -p] ... */
   {
@@ -135,6 +137,13 @@ void removeDirs(char *x_path, int option)
 
     if (rmdir(x_path) < 0)
       unix_error("rmdir error");
+
+    if (option & (1 << _v_))
+    {
+      write(fd, "rmdir: removing directory, \'", 28);
+      write(fd, x_path, strlen(x_path));
+      write(fd, "\'\n", 2);
+    }
   }
 }
 
@@ -145,6 +154,12 @@ int separatePaths(char *x_path, char x_paths[][MAXDIRNAME])
   int len = 0;
   int j = 0;
   int i = 0;
+
+  len = strlen(x_path);
+  if (x_path[len - 1] == '/')
+    x_path[len - 1] = '\0';
+  len = 0;
+
   for (j = 0, i = 0; x_path[i] != '\0'; i++)
   {
     x_paths[len][j++] = x_path[i];
@@ -167,7 +182,7 @@ int separatePaths(char *x_path, char x_paths[][MAXDIRNAME])
 
 /* $$begin rmdirs */
 /* rmdir with p option */
-void rmdir_p(int x_depth, int x_len, char x_paths[][MAXDIRNAME], int option)
+void rmdir_p(int x_depth, int x_len, char x_paths[][MAXDIRNAME], int option, int fd)
 {
   /* end condition of recusion furnction */
   if (x_depth == x_len)
@@ -178,7 +193,7 @@ void rmdir_p(int x_depth, int x_len, char x_paths[][MAXDIRNAME], int option)
     unix_error("rmdir error");
 
   /* rcursive call */
-  rmdir_p(x_depth + 1, x_len, x_paths, option);
+  rmdir_p(x_depth + 1, x_len, x_paths, option, fd);
 
   /* change directory to parent directory */
   if (chdir(PARENT_DIR) < 0)
@@ -201,10 +216,17 @@ void rmdir_p(int x_depth, int x_len, char x_paths[][MAXDIRNAME], int option)
   /* print results with -v optoin true */
   if (option & (1 << _v_))
   {
-    printf("rmdir: removing directory, ");
-    for (int i = 0; i <= x_depth; i++)
-      printf("%s", x_paths[i]);
-    printf("\n");
+    write(fd, "rmdir: removing directory, \'", 28);
+
+    for (int i = 0; i < x_depth; i++)
+      write(fd, x_paths[i], strlen(x_paths[i]));
+
+    int len = strlen(x_paths[x_depth]);
+    if (x_paths[x_depth][len - 1] == '/')
+      len--;
+
+    write(fd, x_paths[x_depth], len);
+    write(fd, "\'\n", 2);
   }
 }
 /* $$end rmdirs */

@@ -3,7 +3,9 @@
  * 
  * project of system programming course of sogang univ.
  * 
- * No.4 echo command
+ * No.6 echo command
+ * 
+ * usage: echo msg
  * 
  * this source code is for 'echo' of linux shell.
  * but it has no 100% functions.

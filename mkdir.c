@@ -8,6 +8,9 @@
  * this source code is for 'mkdir' of linux shell.
  * but it has no 100% functions.
  * 
+ * usage: mkdir [-options] path [path,...]
+ * 
+ * option:
  * -m: Set the permission of directory which will be created.
  * -p: Each directory argument is treated as a pathname
  *    of which all components will be created.
@@ -32,7 +35,7 @@ enum
 };
 
 /* create directory */
-void makeDirectory(char *path, int option, int mode);
+void makeDirectory(char *path, int option, int mode, int fd);
 
 /* check path exist */
 int existDir(char *path);
@@ -62,7 +65,7 @@ int main(int argc, char *argv[])
   for (int i = 0; i < pathCnt; i++)
   {
     /* make directory */
-    makeDirectory(path[i], option, mode);
+    makeDirectory(path[i], option, mode, 1);
   }
 
   return 0;
@@ -70,7 +73,7 @@ int main(int argc, char *argv[])
 
 /* $begin makeDirectory */
 /* create directory with option */
-void makeDirectory(char *path, int option, int mode)
+void makeDirectory(char *path, int option, int mode, int fd)
 {
   char parcedPath[MAXDEPTH][MAXDIRNAME];
   char temp_path[MAXPATHLEN];
@@ -127,7 +130,11 @@ void makeDirectory(char *path, int option, int mode)
 
     // with -v option
     if (option & (1 << _v_))
-      printf("mkdir: creating directory, \'%s\'\n", curr);
+    {
+      write(fd, "mkdir: creating directory, \'", 28);
+      write(fd, curr, strlen(curr));
+      write(fd, "\'\n", 2);
+    }
   }
 }
 /* $end makeDirectory */

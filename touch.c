@@ -8,6 +8,8 @@
  * this source code is for 'touch' of linux shell.
  * but it has no 100% functions.
  * 
+ * usage: touch [-options] path [path,...]
+ * 
  * option:
  * -a: to change file access and modification time.
  * -m: it is used only modify time of a file.

@@ -3,10 +3,12 @@
  * 
  * project of system programming course of sogang univ.
  * 
- * No.4 cat command
+ * No.5 cat command
  * 
  * this source code is for 'cat' of linux shell.
  * but it has no 100% functions.
+ * 
+ * usage: cat [-n] [filename]
  * 
  * option:
  * -n: add line numbers
@@ -14,6 +16,8 @@
 
 #include "csapp.h"
 #include <string.h>
+#include <stdio.h>
+#include <unistd.h>
 #define MAX_DEPTH 128 /* maximum path depth */
 #define MAX_PATH 1024 /* maximum path length */
 
@@ -36,7 +40,12 @@ void parceCmd(struct cmd *cmd, char *argv[]);
 void getOption(struct cmd *cmd, char *argv[]);
 void getPath(struct cmd *cmd, char *argv[]);
 
-void cat_(struct cmd cmd);
+void cat_path(struct cmd cmd);
+
+void cat_noPath(struct cmd cmd);
+int writeLines(char *readBuf, int option, int num);
+char *writeLine(char *readBuf);
+void writeNum(int num);
 
 int main(int argc, char *argv[])
 {
@@ -46,8 +55,12 @@ int main(int argc, char *argv[])
 
   parceCmd(&cmd, argv);
 
-  cat_(cmd);
+  if (cmd.len > 0)
+    cat_path(cmd);
+  else
+    cat_noPath(cmd);
 
+  write(1, "\0", 1);
   return 0;
 }
 
@@ -98,8 +111,8 @@ void getPath(struct cmd *cmd, char *argv[])
 }
 /* $$end getPath */
 
-/* $begin cat_ */
-void cat_(struct cmd cmd)
+/* $begin cat_ path*/
+void cat_path(struct cmd cmd)
 {
   for (int i = 0; i < cmd.len; i++)
   {
@@ -115,15 +128,33 @@ void cat_(struct cmd cmd)
     while (fgets(line, 10240, fp))
     {
       if (cmd.option & (1 << _n_))
-      {
-        sprintf(numStr, "%6d  ", num);
-        write(cmd.fd, numStr, strlen(numStr));
-        num++;
-      }
+        writeNum(num++);
       write(cmd.fd, line, strlen(line));
     }
 
     fclose(fp);
   }
 }
-/* $end cat_ */
+/* $end cat_path */
+
+/* $begin cat_ noPath*/
+void cat_noPath(struct cmd cmd)
+{
+  char readBuf[10240];
+  int num = 1;
+
+  while (fgets(readBuf, 10240, stdin))
+  {
+    if (cmd.option & (1 << _n_))
+      writeNum(num++);
+    write(1, readBuf, strlen(readBuf));
+  }
+}
+/* $end cat_noPath */
+
+void writeNum(int num)
+{
+  char numStr[33];
+  sprintf(numStr, "%6d  ", num);
+  write(1, numStr, strlen(numStr));
+}
