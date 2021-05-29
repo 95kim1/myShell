@@ -5,10 +5,13 @@
 #define MAXARGS 128
 #define MAXPATH 1024
 
+char shellPath[MAXPATH];
+
 /* Function prototypes */
 void eval(char *cmdline);
 int parseline(char *buf, char **argv);
 int builtin_command(char **argv);
+void getCmdPath(char *prog, char *path);
 /* built-in functions */
 void cd(char *argv[]);
 void pwd();
@@ -17,6 +20,9 @@ void pwd();
 int main()
 {
     char cmdline[MAXLINE]; /* Command line */
+
+    if (getcwd(shellPath, MAXPATH) == NULL)
+        unix_error("error");
 
     while (1)
     {
@@ -49,7 +55,10 @@ void eval(char *cmdline)
     { //quit -> exit(0), & -> ignore, other -> run
         if ((pid = Fork()) == 0)
         {
-            if (execve(argv[0], argv, environ) < 0)
+            char prog[MAXPATH];
+            getCmdPath(prog, argv[0]);
+
+            if (execve(prog, argv, environ) < 0)
             { //ex) /bin/ls ls -al &
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
@@ -67,6 +76,23 @@ void eval(char *cmdline)
             printf("%d %s", pid, cmdline);
     }
     return;
+}
+
+/* get directory which has shell command programs */
+void getCmdPath(char *prog, char *path)
+{
+    int len = strlen(path);
+    int i;
+    for (i = len - 1; i >= 0 && path[i] != '/'; i--)
+        ;
+
+    strcpy(prog, shellPath);
+    strcat(prog, "/");
+
+    if (i == -1)
+        strcat(prog, path);
+    else
+        strcat(prog, path + i + 1);
 }
 
 /* If first arg is a builtin command, run it and return true */
@@ -121,7 +147,10 @@ void cd(char *argv[])
     }
 
     if (chdir(path) < 0)
-        unix_error("cd error");
+    {
+        fprintf(stderr, "cd error: %s\n", strerror(errno));
+        return;
+    }
 
     pwd();
 }
