@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <dirent.h>
 
 #define MAX_DEPTH 128 /* maximum path depth */
 #define MAX_PATH 1024 /* maximum path length */
@@ -38,6 +39,20 @@ void sort(int start, int end, char strs[][MAX_STR_LEN], int (*comp)(char *, char
 int comp(char *a, char *b);
 int comp_r(char *a, char *b);
 
+int isFile(char *path)
+{
+  DIR *dh = opendir(path);
+  if (dh != NULL)
+  {
+    closedir(dh);
+    return 0;
+  }
+  if (errno == ENOTDIR)
+    return 1;
+
+  return -1;
+}
+
 int main(int argc, char *argv[])
 {
   char path[MAX_DEPTH][MAX_PATH];
@@ -54,7 +69,7 @@ int main(int argc, char *argv[])
   {
     for (int i = 0; i < cntPath; i++)
     {
-      if (access(path[i], F_OK) < 0)
+      if (!isFile(path[i]))
       {
         printf("sort: directory\n");
         exit(0);
