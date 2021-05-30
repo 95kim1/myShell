@@ -4,6 +4,7 @@
  * project of system programming course of sogang univ.
  * 
  * No.2 mkdir command
+ * : create directories
  * 
  * this source code is for 'mkdir' of linux shell.
  * but it has no 100% functions.

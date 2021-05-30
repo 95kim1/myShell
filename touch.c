@@ -4,6 +4,7 @@
  * project of system programming course of sogang univ.
  * 
  * No.4 touch command
+ * : creating files or update file state
  * 
  * this source code is for 'touch' of linux shell.
  * but it has no 100% functions.

@@ -4,6 +4,7 @@
  * project of system programming course of sogang univ.
  * 
  * No.5 cat command
+ * : read from stdin or file and write to stdout
  * 
  * this source code is for 'cat' of linux shell.
  * but it has no 100% functions.

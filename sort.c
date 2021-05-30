@@ -1,3 +1,19 @@
+/* proj4: implementation of shell
+ * name: sunghee kim
+ * 
+ * project of system programming course of sogang univ.
+ * 
+ * No.7 sort command
+ * : sorting
+ * 
+ * usage: sort [-r] [path,...]
+ * 
+ * this source code is for 'sort' of linux shell.
+ * but it has no 100% functions.
+ * 
+ * option:
+ * -r: sorting reversely
+ */
 #include "csapp.h"
 #include <stdio.h>
 #include <unistd.h>

@@ -4,6 +4,7 @@
  * project of system programming course of sogang univ.
  * 
  * No.6 echo command
+ * : print input message (stdout)
  * 
  * usage: echo msg
  * 

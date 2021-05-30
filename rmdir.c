@@ -4,6 +4,7 @@
  * project of system programming course of sogang univ.
  * 
  * No.3 rmdir command
+ * : delete empty directories
  * 
  * this source code is for 'rmdir' of linux shell.
  * but it has no 100% functions.
